@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { FormGroup, FormBuilder, Validators, AbstractControl, ValidatorFn } from '@angular/forms';
+import { FormGroup, FormBuilder, Validators, AbstractControl, ValidatorFn, FormArray } from '@angular/forms';
 
 import 'rxjs/add/operator/debounceTime';	// throttleTime, distinctUntilChanged may also be helpful in other situations
 
@@ -41,6 +41,8 @@ export class CustomerComponent  {
 			, pattern: 'Please enter a valid email address.'
 		};
 
+		get addresses(): FormArray { return <FormArray>this.customerForm.get('addresses'); }
+
 	// ---------- Constructor
 		constructor(private _fb: FormBuilder) {}
 
@@ -57,6 +59,7 @@ export class CustomerComponent  {
 				, notification: 'email'
 				, rating: ['', ratingRange(1,5)]
 				, sendCatalog: true
+				, addresses: this._fb.array([this.buildAddress()])
 			});
 
 			this.customerForm.get('notification').valueChanges.subscribe(value => {
@@ -70,6 +73,21 @@ export class CustomerComponent  {
 		}
 
 	// ---------- Methods
+		buildAddress(): FormGroup {
+			return this._fb.group({
+				addressType: 'home'
+				, street1: ''
+				, street2: ''
+				, city: ''
+				, state: ''
+				, zip: ''
+			});
+		}
+
+		addAddress(): void {
+			this.addresses.push(this.buildAddress());
+		}
+
 		populateTestData(): void {
 			this.customerForm.patchValue({
 				firstName: 'Jack'
