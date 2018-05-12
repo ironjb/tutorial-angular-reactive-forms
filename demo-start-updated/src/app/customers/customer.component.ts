@@ -1,6 +1,8 @@
 import { Component } from '@angular/core';
 import { FormGroup, FormBuilder, Validators, AbstractControl, ValidatorFn } from '@angular/forms';
 
+import 'rxjs/add/operator/debounceTime';	// throttleTime, distinctUntilChanged may also be helpful in other situations
+
 import { Customer } from './customer';
 
 function emailMatcher(c: AbstractControl): { [key: string]: boolean } {
@@ -32,6 +34,12 @@ export class CustomerComponent  {
 	// ---------- Properties
 		customerForm: FormGroup;
 		customer: Customer= new Customer();
+		emailMessage: string;
+
+		private validationMessages = {
+			required: 'Please enter your email address.'
+			, pattern: 'Please enter a valid email address.'
+		};
 
 	// ---------- Constructor
 		constructor(private _fb: FormBuilder) {}
@@ -50,15 +58,18 @@ export class CustomerComponent  {
 				, rating: ['', ratingRange(1,5)]
 				, sendCatalog: true
 			});
-			// this.customerForm = new FormGroup({
-			// 	firstName: new FormControl()
-			// 	, lastName: new FormControl()
-			// 	, email: new FormControl()
-			// 	, sendCatalog: new FormControl(true)
-			// });
-		}
-	// ---------- Methods
 
+			this.customerForm.get('notification').valueChanges.subscribe(value => {
+				this.setNotification(value);
+			});
+
+			const emailControl = this.customerForm.get('emailGroup.email');
+			emailControl.valueChanges.debounceTime(1000).subscribe(value => {
+				this.setMessage(emailControl);
+			});
+		}
+
+	// ---------- Methods
 		populateTestData(): void {
 			this.customerForm.patchValue({
 				firstName: 'Jack'
@@ -71,6 +82,13 @@ export class CustomerComponent  {
 		save() {
 			console.log(this.customerForm);
 			console.log('Saved: ' + JSON.stringify(this.customerForm.value));
+		}
+
+		setMessage(c: AbstractControl): void {
+			this.emailMessage = '';
+			if ((c.touched || c.dirty) && c.errors) {
+				this.emailMessage = Object.keys(c.errors).map(key => this.validationMessages[key]).join(' ');
+			}
 		}
 
 		setNotification(notifyVia: string): void {
